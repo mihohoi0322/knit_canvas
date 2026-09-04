@@ -1,0 +1,499 @@
+:root {
+  font-family: Inter, 'Noto Sans JP', system-ui, sans-serif;
+  color: #27332f;
+  background: #e9e4da;
+  font-synthesis: none;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  min-width: 320px;
+}
+button,
+input {
+  font: inherit;
+}
+button {
+  border: 1px solid #c8c1b4;
+  background: #fffdf8;
+  color: #35443f;
+  border-radius: 7px;
+  padding: 7px 11px;
+  cursor: pointer;
+}
+button:hover {
+  border-color: #647f75;
+}
+button:focus-visible,
+input:focus-visible {
+  outline: 3px solid #e1a55c;
+  outline-offset: 2px;
+}
+button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.app-shell {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #f4f0e8;
+}
+.topbar {
+  height: 64px;
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  padding: 0 20px;
+  background: #fffdf9;
+  border-bottom: 1px solid #d6d0c4;
+  box-shadow: 0 2px 8px #293b3312;
+  z-index: 2;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 190px;
+}
+.brand-mark {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  background: #264b41;
+  color: #fff;
+  font: 700 20px Georgia;
+}
+.brand strong,
+.brand small {
+  display: block;
+}
+.brand small,
+.eyebrow {
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  color: #718078;
+}
+.project-name {
+  width: min(300px, 24vw);
+  border: 0;
+  border-bottom: 1px solid transparent;
+  background: transparent;
+  padding: 8px;
+  font-weight: 600;
+}
+.project-name:hover,
+.project-name:focus {
+  border-color: #9eaa9f;
+}
+.header-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.primary {
+  background: #294f44;
+  border-color: #294f44;
+  color: #fff;
+}
+.save-state {
+  font-size: 12px;
+  color: #69756f;
+}
+.save-state.error {
+  color: #a13d32;
+}
+.workspace {
+  min-height: 0;
+  flex: 1;
+  display: grid;
+  grid-template-columns: 250px minmax(380px, 1fr) 220px;
+}
+.sidebar {
+  overflow: auto;
+  background: #f8f5ee;
+  padding: 20px;
+  border-color: #d7d0c4;
+}
+.left-panel {
+  border-right: 1px solid #d7d0c4;
+}
+.right-panel {
+  border-left: 1px solid #d7d0c4;
+}
+.control-section {
+  border-bottom: 1px solid #ded8ce;
+  padding-bottom: 18px;
+  margin-bottom: 18px;
+}
+.control-section h2,
+.right-panel h2 {
+  font:
+    600 14px Georgia,
+    serif;
+  margin: 0 0 12px;
+}
+.two-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.two-fields label {
+  font-size: 11px;
+  color: #66716d;
+}
+.two-fields label span {
+  display: block;
+  margin-bottom: 5px;
+}
+.two-fields input {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #cac2b5;
+  border-radius: 6px;
+  background: #fff;
+}
+.hint {
+  font-size: 10px;
+  color: #7a847f;
+  margin: 7px 0 0;
+}
+.tool-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+}
+.selected {
+  background: #e2ece7 !important;
+  border-color: #355b50 !important;
+  box-shadow: inset 0 0 0 1px #355b50;
+}
+.palette {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 7px;
+}
+.swatch {
+  aspect-ratio: 1;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid #aaa;
+}
+.swatch.selected {
+  box-shadow:
+    0 0 0 2px #f8f5ee,
+    0 0 0 4px #263f38 !important;
+}
+.selected-color {
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 13px;
+}
+.selected-color span {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid #aaa;
+}
+.danger {
+  width: 100%;
+  color: #973f36;
+  border-color: #c9877f;
+  background: #fff8f6;
+}
+.message {
+  font-size: 12px;
+}
+.canvas-column {
+  min-width: 0;
+  display: grid;
+  grid-template-rows: var(--repeat-height) 12px 1fr;
+  background: #e8e3d9;
+}
+.repeat-pane,
+.editor-pane {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 14px 20px;
+  background: #f7f4ed;
+}
+.repeat-pane {
+  padding-bottom: 7px;
+}
+.pane-heading h1 {
+  font:
+    600 21px Georgia,
+    serif;
+  margin: 2px 0;
+}
+.pane-heading p {
+  font-size: 11px;
+  margin: 3px 0 8px;
+  color: #758078;
+}
+.repeat-canvas {
+  width: 100%;
+  min-height: 70px;
+  flex: 1;
+  border: 1px solid #d5cec1;
+  border-radius: 7px;
+  background: #fff;
+  display: block;
+}
+.repeat-controls {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 7px;
+}
+.repeat-controls button {
+  font-size: 11px;
+  padding: 4px 12px;
+}
+.splitter {
+  width: 100%;
+  height: 12px;
+  margin: 0;
+  appearance: none;
+  background: #c9c1b3;
+  cursor: row-resize;
+}
+.splitter::-webkit-slider-thumb {
+  appearance: none;
+  width: 44px;
+  height: 5px;
+  border-radius: 3px;
+  background: #61786f;
+}
+.editor-pane {
+  padding-top: 7px;
+}
+.editor-label {
+  font-size: 10px;
+  color: #6d7973;
+  margin-bottom: 4px;
+}
+.editor-canvas {
+  width: 100%;
+  height: 100%;
+  min-height: 180px;
+  touch-action: none;
+  border: 1px solid #d2cabd;
+  border-radius: 7px;
+  background: #fff;
+  display: block;
+}
+.right-panel h2 {
+  font-size: 21px;
+  margin-top: 3px;
+}
+.info-block {
+  padding: 16px 0;
+  border-bottom: 1px solid #ddd6ca;
+}
+.info-block span,
+.info-block strong,
+.info-block small {
+  display: block;
+}
+.info-block span {
+  font-size: 10px;
+  color: #758078;
+  letter-spacing: 0.06em;
+}
+.info-block strong {
+  font:
+    600 17px Georgia,
+    serif;
+  margin-top: 5px;
+}
+.info-block small {
+  font-size: 10px;
+  color: #7f8984;
+  margin-top: 3px;
+}
+.used-colors {
+  display: flex;
+  gap: 4px;
+  margin-top: 9px;
+  flex-wrap: wrap;
+}
+.used-colors i {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid #aaa;
+}
+.tip {
+  margin-top: 24px;
+  padding: 14px;
+  background: #e7eee9;
+  border-radius: 8px;
+  font-size: 11px;
+}
+.tip p {
+  margin: 5px 0 0;
+  line-height: 1.5;
+}
+.print-page {
+  display: none;
+}
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: #17251f80;
+}
+.confirm-dialog {
+  width: min(420px, 100%);
+  padding: 24px;
+  border-radius: 12px;
+  background: #fffdf8;
+  box-shadow: 0 20px 60px #17251f40;
+}
+.confirm-dialog h2 {
+  margin: 0 0 12px;
+  font:
+    600 21px Georgia,
+    serif;
+}
+.confirm-dialog p {
+  color: #56635e;
+  line-height: 1.65;
+}
+.confirm-dialog div {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 20px;
+}
+@media (max-width: 950px) {
+  .workspace {
+    grid-template-columns: 210px minmax(360px, 1fr);
+  }
+  .right-panel {
+    display: none;
+  }
+  .header-actions button:not(.primary):not([aria-label]) {
+    display: none;
+  }
+}
+@media (max-width: 700px) {
+  .topbar {
+    padding: 0 10px;
+    gap: 7px;
+  }
+  .brand {
+    min-width: auto;
+  }
+  .brand div {
+    display: none;
+  }
+  .project-name {
+    width: 130px;
+  }
+  .save-state {
+    display: none;
+  }
+  .workspace {
+    grid-template-columns: 1fr;
+  }
+  .left-panel {
+    position: absolute;
+    left: 0;
+    top: 64px;
+    bottom: 0;
+    width: 190px;
+    z-index: 3;
+    opacity: 0.94;
+    transform: translateX(-172px);
+    transition: 0.2s;
+  }
+  .left-panel:hover,
+  .left-panel:focus-within {
+    transform: none;
+  }
+  .canvas-column {
+    grid-column: 1;
+  }
+  .palette {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 10mm;
+  }
+  body {
+    background: #fff;
+  }
+  .app-shell {
+    display: none;
+  }
+  .print-page {
+    display: flex;
+    width: 190mm;
+    height: 277mm;
+    flex-direction: column;
+    color: #17251f;
+  }
+  .print-page header {
+    border-bottom: 2px solid #294f44;
+    padding-bottom: 3mm;
+  }
+  .print-page header h1 {
+    font:
+      700 22pt Georgia,
+      serif;
+    margin: 0;
+  }
+  .print-page header p {
+    margin: 1mm 0;
+    font-size: 9pt;
+  }
+  .print-page section {
+    display: flex;
+    min-height: 0;
+    flex-direction: column;
+  }
+  .print-page section:first-of-type {
+    height: 150mm;
+  }
+  .print-page section:nth-of-type(2) {
+    height: 73mm;
+  }
+  .print-page h2 {
+    font-size: 10pt;
+    margin: 3mm 0 1mm;
+  }
+  .print-grid,
+  .print-repeat {
+    width: 100%;
+    flex: 1;
+    min-height: 0;
+  }
+  .print-page footer {
+    margin-top: auto;
+    border-top: 1px solid #777;
+    padding-top: 3mm;
+    display: flex;
+    justify-content: space-between;
+    font-size: 8pt;
+    line-height: 1.5;
+  }
+  .print-page footer div:last-child {
+    text-align: right;
+  }
+}
