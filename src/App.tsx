@@ -530,12 +530,16 @@ function NumberField({
   max?: number
   step?: number
 }) {
+  const [inputValue, setInputValue] = useState(String(value))
+  useEffect(() => setInputValue(String(value)), [value])
+
   return (
     <label>
       <span>{label}</span>
       <input
         type="number"
-        defaultValue={value}
+        value={inputValue}
+        onChange={(event) => setInputValue(event.target.value)}
         onBlur={(event) => onCommit(event.target.value)}
         onKeyDown={(event) => {
           if (event.key === 'Enter') event.currentTarget.blur()

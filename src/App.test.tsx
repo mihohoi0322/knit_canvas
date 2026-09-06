@@ -53,6 +53,18 @@ describe('App', () => {
     )
   })
 
+  it('keeps the size inputs synchronized with the restored project', () => {
+    render(<App />)
+    const restored = createProject()
+    restored.columns = 10
+    restored.cells = Array(10 * restored.rows).fill(null)
+
+    act(() => useEditorStore.getState().replace(restored))
+
+    expect(screen.getAllByLabelText('横（目）')[0]).toHaveValue(10)
+    expect(screen.getByLabelText('10目×20段の編集用編み図')).toBeInTheDocument()
+  })
+
   it('allows resizing after drawing with an in-app confirmation', async () => {
     render(<App />)
     const user = userEvent.setup()

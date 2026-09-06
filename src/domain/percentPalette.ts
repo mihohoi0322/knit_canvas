@@ -1,7 +1,5 @@
 import type { PatternProject, YarnColor } from './types'
 
-// Source: https://hamanaka.jp/richmore/0117
-// Chart: https://hamanaka.jp/wp-content/uploads/2015/08/0117_color1.png
 // Sampled 2026-09-06: median RGB of yarn centers; approximate screen colors, not official RGB.
 const samples: [number, string][] = [
   [1, '#eadfb6'],
@@ -108,8 +106,7 @@ const samples: [number, string][] = [
 
 export const PERCENT_PALETTE: YarnColor[] = samples.map(([number, value]) => ({
   id: `percent-${number}`,
-  name: 'パーセント',
-  yarn: 'リッチモア パーセント',
+  name: '色',
   colorNumber: String(number),
   value,
 }))

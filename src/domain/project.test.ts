@@ -158,7 +158,7 @@ it('starts new projects at 20 by 20 and labels colors by the official number', (
   expect(
     colorLabel({
       id: 'percent-74',
-      name: 'パーセント No.74',
+      name: '旧名称',
       value: '#a90012',
     }),
   ).toBe('74')

@@ -18,7 +18,7 @@ it('shows all 100 current colors in official order, searches, and retains recent
     />,
   )
   const history = within(screen.getByRole('region', { name: '最近使った5色' }))
-  const palette = within(screen.getByLabelText('公式色見本100色'))
+  const palette = within(screen.getByLabelText('色見本100色'))
   expect(palette.getAllByRole('button')).toHaveLength(100)
   expect(
     palette

@@ -97,19 +97,12 @@ export function YarnPalette({
           setQuery(event.target.value)
         }}
       />
-      <div className="paged-palette" aria-label="公式色見本100色">
+      <div className="paged-palette" aria-label="色見本100色">
         {colors.map((color) => button(color))}
       </div>
       {colors.length === 0 && <p role="status">該当する色番はありません</p>}
       <p className="palette-caption">
         表示色は目安です。実際の毛糸は色番でご確認ください。
-        <a
-          href="https://hamanaka.jp/richmore/0117"
-          target="_blank"
-          rel="noreferrer"
-        >
-          公式色見本
-        </a>
       </p>
       <button className="new-percent" onClick={onNew}>
         新しい作品を作成
