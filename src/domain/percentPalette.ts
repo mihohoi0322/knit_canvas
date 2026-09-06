@@ -1,0 +1,138 @@
+import type { PatternProject, YarnColor } from './types'
+
+// Source: https://hamanaka.jp/richmore/0117
+// Chart: https://hamanaka.jp/wp-content/uploads/2015/08/0117_color1.png
+// Sampled 2026-09-06: median RGB of yarn centers; approximate screen colors, not official RGB.
+const samples: [number, string][] = [
+  [1, '#eadfb6'],
+  [2, '#eddc8d'],
+  [3, '#efce84'],
+  [4, '#f2c002'],
+  [5, '#faac00'],
+  [6, '#d88900'],
+  [101, '#f5c000'],
+  [102, '#f76600'],
+  [7, '#b34a00'],
+  [8, '#884c00'],
+  [103, '#712e01'],
+  [9, '#401d0d'],
+  [11, '#4f4300'],
+  [12, '#74702c'],
+  [104, '#2a5002'],
+  [13, '#686700'],
+  [14, '#b79500'],
+  [16, '#b5ac24'],
+  [17, '#999746'],
+  [19, '#ac8f63'],
+  [105, '#cdb270'],
+  [20, '#af9962'],
+  [22, '#8b9c96'],
+  [23, '#78907c'],
+  [24, '#344d66'],
+  [25, '#1f5882'],
+  [26, '#0d304c'],
+  [106, '#031a75'],
+  [28, '#121939'],
+  [29, '#181a15'],
+  [30, '#121615'],
+  [31, '#0c242d'],
+  [32, '#0f4329'],
+  [33, '#378200'],
+  [107, '#1a7307'],
+  [34, '#0e496d'],
+  [108, '#1b87bd'],
+  [35, '#439e86'],
+  [109, '#29b33d'],
+  [36, '#bcd272'],
+  [39, '#88a2de'],
+  [40, '#809bd6'],
+  [110, '#2041a8'],
+  [42, '#1432d7'],
+  [43, '#1b16da'],
+  [111, '#3744b8'],
+  [44, '#475597'],
+  [46, '#181655'],
+  [47, '#100f1b'],
+  [112, '#2f12a9'],
+  [49, '#23308a'],
+  [50, '#311a5b'],
+  [51, '#26059e'],
+  [52, '#5e4ff3'],
+  [53, '#5c46a6'],
+  [113, '#5a4694'],
+  [54, '#5e525e'],
+  [55, '#6b6a9f'],
+  [56, '#8783d6'],
+  [59, '#b7a0d9'],
+  [60, '#8f3a84'],
+  [61, '#670131'],
+  [62, '#1b1018'],
+  [63, '#360e16'],
+  [64, '#510311'],
+  [65, '#920f2c'],
+  [66, '#b55392'],
+  [67, '#d078a3'],
+  [68, '#c28eab'],
+  [69, '#f6bfb9'],
+  [70, '#fab2c3'],
+  [72, '#f62267'],
+  [114, '#bd0030'],
+  [73, '#c3000d'],
+  [74, '#a90012'],
+  [75, '#ac001a'],
+  [76, '#1d0f0e'],
+  [77, '#680a0d'],
+  [115, '#e03621'],
+  [79, '#f05d4c'],
+  [81, '#f99b4f'],
+  [83, '#e1ad89'],
+  [84, '#9c6434'],
+  [116, '#9d4e10'],
+  [85, '#b44d1a'],
+  [86, '#e92202'],
+  [117, '#b0000a'],
+  [118, '#a60f09'],
+  [87, '#781309'],
+  [88, '#44100d'],
+  [89, '#17110f'],
+  [90, '#0a0a0a'],
+  [119, '#242741'],
+  [93, '#84828a'],
+  [95, '#eae1bb'],
+  [121, '#aab3b9'],
+  [122, '#646d73'],
+  [123, '#ddcfb3'],
+  [124, '#b1a48b'],
+  [125, '#6a5f4d'],
+]
+
+export const PERCENT_PALETTE: YarnColor[] = samples.map(([number, value]) => ({
+  id: `percent-${number}`,
+  name: 'パーセント',
+  yarn: 'リッチモア パーセント',
+  colorNumber: String(number),
+  value,
+}))
+
+export function colorLabel(color: YarnColor): string {
+  const known = PERCENT_PALETTE.find((entry) => entry.id === color.id)
+  const name = known?.name ?? color.name
+  const number = color.colorNumber ?? known?.colorNumber
+  return number ?? name
+}
+
+export function normalizeCurrentPercentPalette(
+  project: PatternProject,
+): PatternProject {
+  const currentIds = new Set(PERCENT_PALETTE.map((color) => color.id))
+  return {
+    ...project,
+    palette: PERCENT_PALETTE.map((color) => ({ ...color })),
+    cells: project.cells.map((id) =>
+      id !== null && currentIds.has(id) ? id : null,
+    ),
+    recentColorIds: (project.recentColorIds ?? []).filter((id) =>
+      currentIds.has(id),
+    ),
+  }
+}

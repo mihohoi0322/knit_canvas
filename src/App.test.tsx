@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { act, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
@@ -29,7 +29,7 @@ describe('App', () => {
   beforeEach(() => useEditorStore.getState().replace(createProject()))
   it('shows the initial grid and repeat controls', () => {
     render(<App />)
-    expect(screen.getByLabelText('30目×30段の編集用編み図')).toBeInTheDocument()
+    expect(screen.getByLabelText('20目×20段の編集用編み図')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '5回' })).toHaveAttribute(
       'aria-pressed',
       'true',
@@ -41,8 +41,8 @@ describe('App', () => {
   it('selects an accessible palette color and tool', async () => {
     render(<App />)
     const user = userEvent.setup()
-    await user.click(screen.getByRole('button', { name: 'レモン' }))
-    expect(screen.getByRole('button', { name: 'レモン' })).toHaveAttribute(
+    await user.click(screen.getByRole('button', { name: /^4$/ }))
+    expect(screen.getByRole('button', { name: /^4$/ })).toHaveAttribute(
       'aria-pressed',
       'true',
     )
@@ -59,14 +59,37 @@ describe('App', () => {
     const store = useEditorStore.getState()
     store.setTool('pencil')
     store.beginStroke()
-    store.paint([{ x: 29, y: 0 }])
+    store.paint([{ x: 19, y: 0 }])
     store.endStroke()
     const columns = screen.getAllByLabelText('横（目）')[0]
     await user.clear(columns)
-    await user.type(columns, '20{Enter}')
+    await user.type(columns, '10{Enter}')
     expect(screen.getByRole('dialog')).toHaveTextContent('範囲外の色付きセル')
     await user.click(screen.getByRole('button', { name: '変更する' }))
-    expect(useEditorStore.getState().project.columns).toBe(20)
+    expect(useEditorStore.getState().project.columns).toBe(10)
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
+})
+
+it('updates row color checks after painting and undo', () => {
+  useEditorStore.getState().replace(createProject())
+  render(<App />)
+  const list = within(screen.getByRole('region', { name: '段別の使用色一覧' }))
+  const firstRow = () =>
+    within(list.getByRole('rowheader', { name: '1段' }).closest('tr')!)
+  act(() => {
+    const store = useEditorStore.getState()
+    store.setSelectedColor('percent-1')
+    store.beginStroke()
+    store.paint([{ x: 0, y: 0 }])
+    store.endStroke()
+    store.setSelectedColor('percent-2')
+    store.beginStroke()
+    store.paint([{ x: 1, y: 0 }])
+    store.endStroke()
+  })
+  expect(firstRow().getByText('2色')).toBeInTheDocument()
+  expect(screen.getByText('2色以上の段：1 / 20段')).toBeInTheDocument()
+  act(() => useEditorStore.getState().undo())
+  expect(firstRow().getByText('1色')).toBeInTheDocument()
 })

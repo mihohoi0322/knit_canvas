@@ -1,5 +1,5 @@
 import Dexie, { type EntityTable } from 'dexie'
-import { normalizeRepeatCount } from '../domain/project'
+import { parseProjectFile, toProjectFile } from '../domain/project'
 import type { PatternProject, ProjectRepository } from '../domain/types'
 
 type Record = { id: string; updatedAt: string; project: PatternProject }
@@ -17,7 +17,7 @@ export class DexieProjectRepository implements ProjectRepository {
     const project = (await this.db.projects.orderBy('updatedAt').last())
       ?.project
     return project
-      ? { ...project, repeatCount: normalizeRepeatCount(project.repeatCount) }
+      ? parseProjectFile(toProjectFile(project)).project
       : undefined
   }
   async save(project: PatternProject) {

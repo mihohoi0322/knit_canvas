@@ -7,3 +7,5 @@ output/playwright/
 tmp/
 *.tsbuildinfo
 .DS_Store
+
+.playwright-cli/

@@ -1,8 +1,12 @@
+import { colorLabel } from './domain/percentPalette'
 import { useEffect, useRef, useState } from 'react'
+import { YarnPalette } from './components/YarnPalette'
 import { PatternCanvas } from './components/PatternCanvas'
 import {
+  createProject,
   dimensions,
-  parseProjectFile,
+  readProjectFile,
+  rowColorUsage,
   resizeLosesPaint,
   toProjectFile,
   usedColorIds,
@@ -72,13 +76,14 @@ export default function App() {
     return () => window.clearTimeout(timer)
   }, [project])
 
+  const rowColors = rowColorUsage(project)
+  const multiColorRows = rowColors.filter(
+    (row) => row.colorIds.length >= 2,
+  ).length
   const physical = dimensions(project)
   const used = usedColorIds(project.cells)
     .map((id) => project.palette.find((color) => color.id === id))
     .filter(Boolean)
-  const selected =
-    project.palette.find((color) => color.id === selectedColorId) ??
-    project.palette[0]
   const updateSize = (key: 'columns' | 'rows', raw: string) => {
     const value = Math.max(1, Math.min(200, Math.round(Number(raw))))
     if (!Number.isFinite(value) || value === project[key]) return
@@ -112,7 +117,7 @@ export default function App() {
   const importProject = async (file?: File) => {
     if (!file) return
     try {
-      replace(parseProjectFile(JSON.parse(await file.text())).project)
+      replace((await readProjectFile(file)).project)
       setMessage('ファイルを読み込みました')
     } catch (error) {
       setMessage(
@@ -238,7 +243,8 @@ export default function App() {
                   step={0.1}
                   onCommit={(value) => {
                     const n = Number(value)
-                    if (n > 0) updateProject({ stitchesPer10cm: n })
+                    if (Number.isFinite(n) && n > 0)
+                      updateProject({ stitchesPer10cm: n })
                   }}
                 />
                 <NumberField
@@ -248,7 +254,8 @@ export default function App() {
                   step={0.1}
                   onCommit={(value) => {
                     const n = Number(value)
-                    if (n > 0) updateProject({ rowsPer10cm: n })
+                    if (Number.isFinite(n) && n > 0)
+                      updateProject({ rowsPer10cm: n })
                   }}
                 />
               </div>
@@ -272,26 +279,20 @@ export default function App() {
               </div>
             </Section>
             <Section title="色糸パレット">
-              <div className="palette">
-                {project.palette.map((color) => (
-                  <button
-                    key={color.id}
-                    aria-label={color.name}
-                    aria-pressed={selectedColorId === color.id}
-                    className={
-                      selectedColorId === color.id
-                        ? 'swatch selected'
-                        : 'swatch'
-                    }
-                    style={{ background: color.value }}
-                    onClick={() => setSelectedColor(color.id)}
-                  />
-                ))}
-              </div>
-              <div className="selected-color">
-                <span style={{ background: selected.value }} />
-                選択中: {selected.name}
-              </div>
+              <YarnPalette
+                key={project.id}
+                project={project}
+                selectedId={selectedColorId}
+                onSelect={setSelectedColor}
+                onNew={() => {
+                  if (
+                    window.confirm(
+                      '新しい作品を作成します。現在の作品を残す場合は、先にファイル保存してください。',
+                    )
+                  )
+                    replace(createProject())
+                }}
+              />
             </Section>
             <button
               className="danger"
@@ -396,13 +397,65 @@ export default function App() {
                     color && (
                       <i
                         key={color.id}
-                        title={color.name}
+                        title={colorLabel(color)}
                         style={{ background: color.value }}
                       />
                     ),
                 )}
               </div>
             </div>
+            <section
+              className="row-color-check"
+              aria-labelledby="row-color-heading"
+            >
+              <h3 id="row-color-heading">横1段ごとの色数</h3>
+              <p>
+                2色以上の段：{multiColorRows} / {project.rows}段
+              </p>
+              <small>下から1段目・未着色は数えません</small>
+              <div
+                className="row-color-list"
+                tabIndex={0}
+                role="region"
+                aria-label="段別の使用色一覧"
+              >
+                <table>
+                  <thead>
+                    <tr>
+                      <th scope="col">段</th>
+                      <th scope="col">色数</th>
+                      <th scope="col">使用色</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[...rowColors].reverse().map(({ row, colorIds }) => (
+                      <tr key={row}>
+                        <th scope="row">{row}段</th>
+                        <td>{colorIds.length}色</td>
+                        <td>
+                          <div className="row-color-chips">
+                            {colorIds.map((id) => {
+                              const color = project.palette.find(
+                                (entry) => entry.id === id,
+                              )
+                              return color ? (
+                                <span
+                                  key={id}
+                                  role="img"
+                                  aria-label={colorLabel(color)}
+                                  title={colorLabel(color)}
+                                  style={{ backgroundColor: color.value }}
+                                />
+                              ) : null
+                            })}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
             <div className="tip">
               <strong>編み図のヒント</strong>
               <p>5目・5段ごとの太線と番号を目安にしてください。</p>

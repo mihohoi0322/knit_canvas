@@ -5,6 +5,8 @@ export type CellColor = string | null
 export type YarnColor = {
   id: string
   name: string
+  yarn?: string
+  colorNumber?: string
   value: string
 }
 
@@ -16,6 +18,7 @@ export type PatternProject = {
   stitchesPer10cm: number
   rowsPer10cm: number
   palette: YarnColor[]
+  recentColorIds?: string[]
   cells: CellColor[]
   repeatCount: RepeatCount
   createdAt: string

@@ -1,4 +1,4 @@
-import { DEFAULT_PALETTE } from './palette'
+import { PERCENT_PALETTE } from './percentPalette'
 import type {
   CellColor,
   GridPoint,
@@ -7,6 +7,13 @@ import type {
 } from './types'
 
 export const MAX_GRID_SIZE = 200
+export const MAX_PROJECT_FILE_BYTES = 5 * 1024 * 1024
+
+export async function readProjectFile(file: File): Promise<ProjectFileV1> {
+  if (file.size > MAX_PROJECT_FILE_BYTES)
+    throw new Error('ファイルは5MB以下にしてください')
+  return parseProjectFile(JSON.parse(await file.text()))
+}
 
 export function normalizeRepeatCount(value: number): 3 | 5 | 8 {
   if (value === 1 || value === 3) return 3
@@ -38,6 +45,13 @@ export function dimensions(
 }
 
 export function interpolateLine(start: GridPoint, end: GridPoint): GridPoint[] {
+  if (
+    [start.x, start.y, end.x, end.y].some(
+      (value) =>
+        !Number.isInteger(value) || value < 0 || value >= MAX_GRID_SIZE,
+    )
+  )
+    return []
   const points: GridPoint[] = []
   let x = start.x
   let y = start.y
@@ -115,12 +129,13 @@ export function createProject(now = new Date().toISOString()): PatternProject {
   return {
     id: globalThis.crypto?.randomUUID?.() ?? `project-${Date.now()}`,
     name: '新しいパターン',
-    columns: 30,
-    rows: 30,
+    columns: 20,
+    rows: 20,
     stitchesPer10cm: 22,
     rowsPer10cm: 30,
-    palette: DEFAULT_PALETTE,
-    cells: Array<CellColor>(900).fill(null),
+    palette: PERCENT_PALETTE.map((color) => ({ ...color })),
+    recentColorIds: [],
+    cells: Array<CellColor>(400).fill(null),
     repeatCount: 5,
     createdAt: now,
     updatedAt: now,
@@ -147,18 +162,68 @@ export function parseProjectFile(value: unknown): ProjectFileV1 {
     p.rows > MAX_GRID_SIZE
   )
     throw new Error('方眼サイズが範囲外です')
-  if (!(p.stitchesPer10cm > 0) || !(p.rowsPer10cm > 0))
+  if (
+    !Number.isFinite(p.stitchesPer10cm) ||
+    !Number.isFinite(p.rowsPer10cm) ||
+    !(p.stitchesPer10cm > 0) ||
+    !(p.rowsPer10cm > 0) ||
+    !Number.isFinite(p.rowsPer10cm / p.stitchesPer10cm) ||
+    p.rowsPer10cm / p.stitchesPer10cm === 0
+  )
     throw new Error('ゲージは0より大きくしてください')
   if (
     !Array.isArray(p.palette) ||
-    p.palette.length !== 24 ||
+    p.palette.length < 1 ||
+    p.palette.length > 256 ||
     !Array.isArray(p.cells) ||
     p.cells.length !== p.columns * p.rows
   )
     throw new Error('パターンデータが不正です')
+  if (
+    [p.id, p.name, p.createdAt, p.updatedAt].some(
+      (value) => typeof value !== 'string',
+    ) ||
+    p.palette.some(
+      (color) =>
+        !color ||
+        typeof color.id !== 'string' ||
+        !color.id ||
+        typeof color.name !== 'string' ||
+        typeof color.value !== 'string' ||
+        (color.yarn !== undefined && typeof color.yarn !== 'string') ||
+        (color.colorNumber !== undefined &&
+          (typeof color.colorNumber !== 'string' ||
+            !/^\d{1,4}$/.test(color.colorNumber))) ||
+        !/^#[0-9a-fA-F]{6}$/.test(color.value),
+    )
+  )
+    throw new Error('パターンデータが不正です')
   const ids = new Set(p.palette.map((color) => color.id))
+  if (ids.size !== p.palette.length) throw new Error('色のIDが重複しています')
   if (p.cells.some((color) => color !== null && !ids.has(color)))
     throw new Error('存在しない色が使われています')
+  if (
+    p.recentColorIds !== undefined &&
+    (!Array.isArray(p.recentColorIds) ||
+      p.recentColorIds.length > 5 ||
+      new Set(p.recentColorIds).size !== p.recentColorIds.length ||
+      p.recentColorIds.some((id) => typeof id !== 'string' || !ids.has(id)))
+  )
+    throw new Error('最近使った色が不正です')
   const repeatCount = normalizeRepeatCount(p.repeatCount)
   return { ...file, project: { ...p, repeatCount } } as ProjectFileV1
+}
+
+export function rowColorUsage(
+  project: Pick<PatternProject, 'cells' | 'columns' | 'rows'>,
+) {
+  return Array.from({ length: project.rows }, (_, index) => ({
+    row: index + 1,
+    colorIds: usedColorIds(
+      project.cells.slice(
+        index * project.columns,
+        (index + 1) * project.columns,
+      ),
+    ),
+  }))
 }

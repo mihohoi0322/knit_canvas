@@ -48,7 +48,14 @@ export function canvasPointToCell(
   const x = Math.floor(px / metrics.cellWidth)
   const visualY = Math.floor(py / metrics.cellHeight)
   const y = project.rows - visualY - 1
-  if (x < 0 || x >= project.columns || y < 0 || y >= project.rows)
+  if (
+    !Number.isFinite(x) ||
+    !Number.isFinite(y) ||
+    x < 0 ||
+    x >= project.columns ||
+    y < 0 ||
+    y >= project.rows
+  )
     return undefined
   return { x, y }
 }

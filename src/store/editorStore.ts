@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { createProject, paintCells, resizeCells } from '../domain/project'
+import { normalizeCurrentPercentPalette } from '../domain/percentPalette'
 import type {
   CellColor,
   GridPoint,
@@ -44,7 +45,7 @@ const restore = (project: PatternProject, value: Snapshot): PatternProject => ({
 export const useEditorStore = create<EditorState>((set, get) => ({
   project: createProject(),
   tool: 'pencil',
-  selectedColorId: 'brick',
+  selectedColorId: 'percent-1',
   past: [],
   future: [],
   beginStroke: () => set({ strokeStart: snapshot(get().project) }),
@@ -77,6 +78,19 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       )
         return { strokeStart: undefined }
       return {
+        project:
+          state.tool === 'pencil'
+            ? {
+                ...state.project,
+                recentColorIds: [
+                  state.selectedColorId,
+                  ...(state.project.recentColorIds ?? []).filter(
+                    (id) => id !== state.selectedColorId,
+                  ),
+                ].slice(0, 5),
+                updatedAt: new Date().toISOString(),
+              }
+            : state.project,
         past: [...state.past, state.strokeStart].slice(-100),
         future: [],
         strokeStart: undefined,
@@ -84,7 +98,11 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     }),
   setTool: (tool) => set({ tool }),
   setSelectedColor: (selectedColorId) =>
-    set({ selectedColorId, tool: 'pencil' }),
+    set((state) =>
+      state.project.palette.some((color) => color.id === selectedColorId)
+        ? { selectedColorId, tool: 'pencil' }
+        : {},
+    ),
   updateProject: (patch) =>
     set((state) => ({
       project: {
@@ -143,8 +161,18 @@ export const useEditorStore = create<EditorState>((set, get) => ({
         future: state.future.slice(1),
       }
     }),
-  replace: (project) =>
-    set({ project, past: [], future: [], strokeStart: undefined }),
+  replace: (project) => {
+    const currentProject = normalizeCurrentPercentPalette(project)
+    set({
+      project: currentProject,
+      selectedColorId:
+        currentProject.recentColorIds?.[0] ?? currentProject.palette[0].id,
+      tool: 'pencil',
+      past: [],
+      future: [],
+      strokeStart: undefined,
+    })
+  },
   setRepeatCount: (repeatCount) =>
     set((state) => ({
       project: {
