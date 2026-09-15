@@ -53,6 +53,35 @@ describe('App', () => {
     )
   })
 
+  it('zooms the editable chart and resets it to 100%', async () => {
+    render(<App />)
+    const user = userEvent.setup()
+
+    await user.click(screen.getByRole('button', { name: '編み図を拡大' }))
+    const panButton = screen.getByRole('button', { name: '表示位置を移動' })
+    expect(panButton).toBeEnabled()
+    await user.click(panButton)
+    expect(panButton).toHaveAttribute('aria-pressed', 'true')
+    expect(
+      screen.getByRole('button', { name: '表示倍率 125%。100%に戻す' }),
+    ).toBeEnabled()
+    expect(document.querySelector('.editor-canvas-wrap')).toHaveStyle({
+      '--editor-zoom': '125%',
+    })
+
+    await user.click(
+      screen.getByRole('button', { name: '表示倍率 125%。100%に戻す' }),
+    )
+    expect(
+      screen.getByRole('button', { name: '表示倍率 100%。100%に戻す' }),
+    ).toBeDisabled()
+    expect(panButton).toBeDisabled()
+    expect(panButton).toHaveAttribute('aria-pressed', 'false')
+    expect(document.querySelector('.editor-canvas-wrap')).toHaveStyle({
+      '--editor-zoom': '100%',
+    })
+  })
+
   it('keeps the size inputs synchronized with the restored project', () => {
     render(<App />)
     const restored = createProject()

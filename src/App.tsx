@@ -19,6 +19,10 @@ import { useEditorStore } from './store/editorStore'
 type SaveStatus = 'loading' | 'saving' | 'saved' | 'error'
 type PendingResize = { columns: number; rows: number }
 
+const MIN_EDITOR_ZOOM = 50
+const MAX_EDITOR_ZOOM = 300
+const EDITOR_ZOOM_STEP = 25
+
 export default function App() {
   const {
     project,
@@ -43,10 +47,22 @@ export default function App() {
   const [message, setMessage] = useState('')
   const [exportingPdf, setExportingPdf] = useState(false)
   const [repeatHeight, setRepeatHeight] = useState(31)
+  const [editorZoom, setEditorZoom] = useState(100)
+  const [panMode, setPanMode] = useState(false)
   const [pendingResize, setPendingResize] = useState<PendingResize>()
   const [sizeInputRevision, setSizeInputRevision] = useState(0)
   const fileRef = useRef<HTMLInputElement>(null)
   const firstSave = useRef(true)
+  const panDrag = useRef<
+    | {
+        pointerId: number
+        clientX: number
+        clientY: number
+        scrollLeft: number
+        scrollTop: number
+      }
+    | undefined
+  >(undefined)
 
   useEffect(() => {
     const startedAt = useEditorStore.getState().project.updatedAt
@@ -131,6 +147,40 @@ export default function App() {
       .save(project)
       .then(() => setSaveStatus('saved'))
       .catch(() => setSaveStatus('error'))
+  }
+  const changeEditorZoom = (nextZoom: number) => {
+    const clampedZoom = Math.max(
+      MIN_EDITOR_ZOOM,
+      Math.min(MAX_EDITOR_ZOOM, nextZoom),
+    )
+    setEditorZoom(clampedZoom)
+    if (clampedZoom <= 100) setPanMode(false)
+  }
+  const startPan = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!panMode) return
+    event.preventDefault()
+    event.currentTarget.setPointerCapture(event.pointerId)
+    panDrag.current = {
+      pointerId: event.pointerId,
+      clientX: event.clientX,
+      clientY: event.clientY,
+      scrollLeft: event.currentTarget.scrollLeft,
+      scrollTop: event.currentTarget.scrollTop,
+    }
+  }
+  const movePan = (event: React.PointerEvent<HTMLDivElement>) => {
+    const drag = panDrag.current
+    if (!panMode || !drag || drag.pointerId !== event.pointerId) return
+    event.currentTarget.scrollLeft =
+      drag.scrollLeft - (event.clientX - drag.clientX)
+    event.currentTarget.scrollTop =
+      drag.scrollTop - (event.clientY - drag.clientY)
+  }
+  const finishPan = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (panDrag.current?.pointerId !== event.pointerId) return
+    panDrag.current = undefined
+    if (event.currentTarget.hasPointerCapture(event.pointerId))
+      event.currentTarget.releasePointerCapture(event.pointerId)
   }
   const downloadPdf = async () => {
     setExportingPdf(true)
@@ -356,18 +406,86 @@ export default function App() {
               onChange={(event) => setRepeatHeight(Number(event.target.value))}
             />
             <div className="editor-pane">
-              <div className="editor-label">
-                実ゲージ編み図 · 下から上へ数えます
+              <div className="editor-toolbar">
+                <div className="editor-label">
+                  実ゲージ編み図 · 下から上へ数えます
+                </div>
+                <div className="zoom-controls" aria-label="編み図の表示倍率">
+                  <button
+                    type="button"
+                    aria-label="編み図を縮小"
+                    disabled={editorZoom === MIN_EDITOR_ZOOM}
+                    onClick={() =>
+                      changeEditorZoom(editorZoom - EDITOR_ZOOM_STEP)
+                    }
+                  >
+                    −
+                  </button>
+                  <button
+                    type="button"
+                    className="zoom-value"
+                    aria-label={`表示倍率 ${editorZoom}%。100%に戻す`}
+                    disabled={editorZoom === 100}
+                    onClick={() => changeEditorZoom(100)}
+                  >
+                    {editorZoom}%
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="編み図を拡大"
+                    disabled={editorZoom === MAX_EDITOR_ZOOM}
+                    onClick={() =>
+                      changeEditorZoom(editorZoom + EDITOR_ZOOM_STEP)
+                    }
+                  >
+                    ＋
+                  </button>
+                  <button
+                    type="button"
+                    className={panMode ? 'selected pan-toggle' : 'pan-toggle'}
+                    aria-label="表示位置を移動"
+                    aria-pressed={panMode}
+                    disabled={editorZoom <= 100}
+                    onClick={() => setPanMode((enabled) => !enabled)}
+                  >
+                    ✋ 移動
+                  </button>
+                </div>
               </div>
-              <PatternCanvas
-                project={project}
-                interactive
-                labels
-                className="editor-canvas"
-                onStrokeStart={beginStroke}
-                onStroke={paint}
-                onStrokeEnd={endStroke}
-              />
+              <div
+                className={`editor-viewport${panMode ? ' panning-enabled' : ''}`}
+                onPointerDown={startPan}
+                onPointerMove={movePan}
+                onPointerUp={finishPan}
+                onPointerCancel={finishPan}
+                onWheel={(event) => {
+                  if (!event.ctrlKey && !event.metaKey) return
+                  event.preventDefault()
+                  changeEditorZoom(
+                    editorZoom +
+                      (event.deltaY < 0 ? EDITOR_ZOOM_STEP : -EDITOR_ZOOM_STEP),
+                  )
+                }}
+              >
+                <div
+                  className="editor-canvas-wrap"
+                  style={
+                    {
+                      '--editor-zoom': `${editorZoom}%`,
+                    } as React.CSSProperties
+                  }
+                >
+                  <PatternCanvas
+                    project={project}
+                    interactive={!panMode}
+                    labels
+                    className="editor-canvas"
+                    onStrokeStart={beginStroke}
+                    onStroke={paint}
+                    onStrokeEnd={endStroke}
+                  />
+                </div>
+              </div>
             </div>
           </section>
 

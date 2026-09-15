@@ -278,20 +278,69 @@ button:disabled {
 .editor-pane {
   padding-top: 7px;
 }
+.editor-toolbar {
+  min-height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 4px;
+}
 .editor-label {
   font-size: 10px;
   color: #6d7973;
-  margin-bottom: 4px;
 }
-.editor-canvas {
-  width: 100%;
-  height: 0;
+.zoom-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.zoom-controls button {
+  min-width: 28px;
+  height: 26px;
+  padding: 2px 7px;
+  font-size: 12px;
+  line-height: 1;
+}
+.zoom-controls .zoom-value {
+  min-width: 58px;
+  font-variant-numeric: tabular-nums;
+}
+.zoom-controls .pan-toggle {
+  min-width: 64px;
+}
+.zoom-controls .zoom-value:disabled {
+  opacity: 1;
+  cursor: default;
+}
+.editor-viewport {
+  min-width: 0;
   min-height: 0;
   flex: 1;
-  touch-action: none;
+  overflow: auto;
   border: 1px solid #d2cabd;
   border-radius: 7px;
   background: #fff;
+  overscroll-behavior: contain;
+}
+.editor-viewport.panning-enabled {
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+.editor-viewport.panning-enabled:active {
+  cursor: grabbing;
+}
+.editor-canvas-wrap {
+  width: var(--editor-zoom);
+  height: var(--editor-zoom);
+  margin: auto;
+}
+.editor-canvas {
+  width: 100%;
+  height: 100%;
+  touch-action: none;
   display: block;
 }
 .right-panel h2 {

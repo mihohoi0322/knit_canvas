@@ -128,6 +128,51 @@ test('changes repeat count and supports undo after drawing', async ({
   await expect(page.getByRole('button', { name: '元に戻す' })).toBeEnabled()
 })
 
+test('zooms only the editable chart and keeps painting available', async ({
+  page,
+}) => {
+  await page.goto('/')
+  const editor = page.getByLabel('20目×20段の編集用編み図')
+  const preview = page.locator('.repeat-canvas')
+  const editorBefore = await editor.boundingBox()
+  const previewBefore = await preview.boundingBox()
+  if (!editorBefore || !previewBefore) throw new Error('canvas not visible')
+
+  await page.getByRole('button', { name: '編み図を拡大' }).click()
+  const editorAfter = await editor.boundingBox()
+  const previewAfter = await preview.boundingBox()
+  if (!editorAfter || !previewAfter) throw new Error('canvas not visible')
+
+  expect(editorAfter.width).toBeGreaterThan(editorBefore.width)
+  expect(editorAfter.height).toBeGreaterThan(editorBefore.height)
+  expect(previewAfter.width).toBeCloseTo(previewBefore.width, 0)
+  expect(previewAfter.height).toBeCloseTo(previewBefore.height, 0)
+
+  await page.getByRole('button', { name: '表示位置を移動' }).click()
+  const viewport = page.locator('.editor-viewport')
+  const viewportBox = await viewport.boundingBox()
+  if (!viewportBox) throw new Error('editor viewport not visible')
+  await page.mouse.move(
+    viewportBox.x + viewportBox.width * 0.7,
+    viewportBox.y + viewportBox.height * 0.5,
+  )
+  await page.mouse.down()
+  await page.mouse.move(
+    viewportBox.x + viewportBox.width * 0.3,
+    viewportBox.y + viewportBox.height * 0.3,
+  )
+  await page.mouse.up()
+  await expect
+    .poll(() => viewport.evaluate((element) => element.scrollLeft))
+    .toBeGreaterThan(0)
+
+  await page.getByRole('button', { name: '表示位置を移動' }).click()
+  await editor.click({
+    position: { x: editorAfter.width / 2, y: editorAfter.height / 2 },
+  })
+  await expect(page.getByRole('button', { name: '元に戻す' })).toBeEnabled()
+})
+
 test('downloads a direct A4 PDF', async ({ page }, testInfo) => {
   await page.goto('/')
   const downloadPromise = page.waitForEvent('download')
