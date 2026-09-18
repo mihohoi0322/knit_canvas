@@ -8,21 +8,21 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['icon.svg'],
+      includeAssets: ['icon-yarn-pencil.png'],
       manifest: {
         name: 'Knit Canvas',
         short_name: 'Knit Canvas',
         description: '実ゲージでカラーワークを設計する編み図エディター',
-        theme_color: '#203c35',
+        theme_color: '#264b41',
         background_color: '#f4f0e8',
         display: 'standalone',
         start_url: '.',
         icons: [
           {
-            src: 'icon.svg',
-            sizes: 'any',
-            type: 'image/svg+xml',
-            purpose: 'any maskable',
+            src: 'icon-yarn-pencil.png',
+            sizes: '1254x1254',
+            type: 'image/png',
+            purpose: 'any',
           },
         ],
       },

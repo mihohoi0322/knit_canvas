@@ -202,7 +202,11 @@ export default function App() {
       <div className="app-shell">
         <header className="topbar">
           <div className="brand">
-            <span className="brand-mark">K</span>
+            <img
+              className="brand-mark"
+              src={`${import.meta.env.BASE_URL}icon-yarn-pencil.png`}
+              alt=""
+            />
             <div>
               <strong>Knit Canvas</strong>
               <small>COLORWORK STUDIO</small>

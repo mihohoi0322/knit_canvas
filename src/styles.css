@@ -59,14 +59,12 @@ button:disabled {
   min-width: 190px;
 }
 .brand-mark {
-  display: grid;
-  place-items: center;
+  display: block;
   width: 36px;
   height: 36px;
   border-radius: 9px;
-  background: #264b41;
-  color: #fff;
-  font: 700 20px Georgia;
+  background: #fffdf9;
+  object-fit: contain;
 }
 .brand strong,
 .brand small {
