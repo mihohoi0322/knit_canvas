@@ -355,6 +355,7 @@ button:disabled {
   border-radius: 7px;
   background: #fff;
   overscroll-behavior: contain;
+  touch-action: none;
 }
 .editor-viewport.panning-enabled {
   cursor: grab;

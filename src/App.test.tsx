@@ -103,6 +103,39 @@ describe('App', () => {
     })
   })
 
+  it('zooms only the editable chart with a two-finger pinch', () => {
+    render(<App />)
+    const viewport = document.querySelector('.editor-viewport')!
+    const dispatchTouchPointer = (
+      type: string,
+      pointerId: number,
+      clientX: number,
+      clientY: number,
+    ) => {
+      const event = new Event(type, { bubbles: true, cancelable: true })
+      Object.defineProperties(event, {
+        pointerId: { value: pointerId },
+        pointerType: { value: 'touch' },
+        clientX: { value: clientX },
+        clientY: { value: clientY },
+      })
+      viewport.dispatchEvent(event)
+    }
+
+    act(() => {
+      dispatchTouchPointer('pointerdown', 1, 100, 100)
+      dispatchTouchPointer('pointerdown', 2, 200, 100)
+      dispatchTouchPointer('pointermove', 2, 250, 100)
+    })
+
+    expect(document.querySelector('.editor-canvas-wrap')).toHaveStyle({
+      '--editor-zoom': '150%',
+    })
+    expect(document.querySelector('.repeat-canvas')).not.toHaveStyle({
+      '--editor-zoom': '150%',
+    })
+  })
+
   it('keeps the size inputs synchronized with the restored project', () => {
     render(<App />)
     const restored = createProject()

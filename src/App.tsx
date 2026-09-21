@@ -56,6 +56,11 @@ export default function App() {
   const [sizeInputRevision, setSizeInputRevision] = useState(0)
   const fileRef = useRef<HTMLInputElement>(null)
   const canvasColumnRef = useRef<HTMLElement>(null)
+  const editorZoomRef = useRef(editorZoom)
+  const pinchPointers = useRef(new Map<number, { x: number; y: number }>())
+  const pinchStart = useRef<{ distance: number; zoom: number } | undefined>(
+    undefined,
+  )
   const firstSave = useRef(true)
   const lastRepeatHeight = useRef(repeatHeight)
   const repeatDrag = useRef<
@@ -161,8 +166,47 @@ export default function App() {
       MIN_EDITOR_ZOOM,
       Math.min(MAX_EDITOR_ZOOM, nextZoom),
     )
+    editorZoomRef.current = clampedZoom
     setEditorZoom(clampedZoom)
     if (clampedZoom <= 100) setPanMode(false)
+  }
+  const startPinch = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (event.pointerType !== 'touch') return
+    pinchPointers.current.set(event.pointerId, {
+      x: event.clientX,
+      y: event.clientY,
+    })
+    if (pinchPointers.current.size !== 2) return
+    const [first, second] = [...pinchPointers.current.values()]
+    pinchStart.current = {
+      distance: Math.hypot(second.x - first.x, second.y - first.y),
+      zoom: editorZoomRef.current,
+    }
+  }
+  const movePinch = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (
+      event.pointerType !== 'touch' ||
+      !pinchPointers.current.has(event.pointerId)
+    )
+      return
+    pinchPointers.current.set(event.pointerId, {
+      x: event.clientX,
+      y: event.clientY,
+    })
+    const start = pinchStart.current
+    if (pinchPointers.current.size < 2 || !start || start.distance === 0) return
+    event.preventDefault()
+    event.stopPropagation()
+    const [first, second] = [...pinchPointers.current.values()]
+    const distance = Math.hypot(second.x - first.x, second.y - first.y)
+    changeEditorZoom(Math.round(start.zoom * (distance / start.distance)))
+  }
+  const finishPinch = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (event.pointerType !== 'touch') return
+    const wasPinching = pinchPointers.current.size >= 2
+    pinchPointers.current.delete(event.pointerId)
+    if (pinchPointers.current.size < 2) pinchStart.current = undefined
+    if (wasPinching) event.stopPropagation()
   }
   const changeRepeatHeight = (nextHeight: number) => {
     if (nextHeight <= REPEAT_COLLAPSE_THRESHOLD) {
@@ -555,6 +599,10 @@ export default function App() {
               </div>
               <div
                 className={`editor-viewport${panMode ? ' panning-enabled' : ''}`}
+                onPointerDownCapture={startPinch}
+                onPointerMoveCapture={movePinch}
+                onPointerUpCapture={finishPinch}
+                onPointerCancelCapture={finishPinch}
                 onPointerDown={startPan}
                 onPointerMove={movePan}
                 onPointerUp={finishPan}

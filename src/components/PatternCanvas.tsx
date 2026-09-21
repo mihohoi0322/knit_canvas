@@ -32,6 +32,16 @@ export function PatternCanvas({
   const metricsRef = useRef<CanvasMetrics | undefined>(undefined)
   const lastPoint = useRef<GridPoint | undefined>(undefined)
   const drawing = useRef(false)
+  const touchPointers = useRef(new Set<number>())
+  const pendingTouch = useRef<
+    | {
+        pointerId: number
+        clientX: number
+        clientY: number
+        point: GridPoint
+      }
+    | undefined
+  >(undefined)
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -73,6 +83,23 @@ export function PatternCanvas({
   }
   const pointerDown = (event: React.PointerEvent<HTMLCanvasElement>) => {
     if (!interactive) return
+    if (event.pointerType === 'touch') {
+      touchPointers.current.add(event.pointerId)
+      if (touchPointers.current.size > 1) {
+        pendingTouch.current = undefined
+        return
+      }
+      const point = pointForEvent(event)
+      if (!point) return
+      event.currentTarget.setPointerCapture(event.pointerId)
+      pendingTouch.current = {
+        pointerId: event.pointerId,
+        clientX: event.clientX,
+        clientY: event.clientY,
+        point,
+      }
+      return
+    }
     event.currentTarget.setPointerCapture(event.pointerId)
     const point = pointForEvent(event)
     if (!point) return
@@ -82,6 +109,28 @@ export function PatternCanvas({
     onStroke?.([point])
   }
   const pointerMove = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    if (event.pointerType === 'touch') {
+      const pending = pendingTouch.current
+      if (
+        touchPointers.current.size > 1 ||
+        (pending && pending.pointerId !== event.pointerId)
+      )
+        return
+      if (pending && !drawing.current) {
+        if (
+          Math.hypot(
+            event.clientX - pending.clientX,
+            event.clientY - pending.clientY,
+          ) < 4
+        )
+          return
+        drawing.current = true
+        lastPoint.current = pending.point
+        onStrokeStart?.()
+        onStroke?.([pending.point])
+        pendingTouch.current = undefined
+      }
+    }
     if (!interactive || !event.currentTarget.hasPointerCapture(event.pointerId))
       return
     const point = pointForEvent(event)
@@ -95,7 +144,22 @@ export function PatternCanvas({
     lastPoint.current = point
   }
   const pointerUp = (event: React.PointerEvent<HTMLCanvasElement>) => {
-    if (!interactive || !drawing.current) return
+    if (!interactive) return
+    if (event.pointerType === 'touch') {
+      touchPointers.current.delete(event.pointerId)
+      const pending = pendingTouch.current
+      if (pending?.pointerId === event.pointerId) {
+        pendingTouch.current = undefined
+        onStrokeStart?.()
+        onStroke?.([pending.point])
+        onStrokeEnd?.()
+      }
+    }
+    if (!drawing.current) {
+      if (event.currentTarget.hasPointerCapture(event.pointerId))
+        event.currentTarget.releasePointerCapture(event.pointerId)
+      return
+    }
     drawing.current = false
     if (event.currentTarget.hasPointerCapture(event.pointerId))
       event.currentTarget.releasePointerCapture(event.pointerId)
@@ -103,6 +167,7 @@ export function PatternCanvas({
     onStrokeEnd?.()
   }
   const lostCapture = () => {
+    pendingTouch.current = undefined
     if (!drawing.current) return
     drawing.current = false
     lastPoint.current = undefined
