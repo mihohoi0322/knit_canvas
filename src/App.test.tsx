@@ -38,6 +38,27 @@ describe('App', () => {
       0,
     )
   })
+  it('hides and restores the pattern repeat pane', async () => {
+    render(<App />)
+    const user = userEvent.setup()
+
+    await user.click(
+      screen.getByRole('button', { name: 'パターンリピートを非表示' }),
+    )
+    expect(
+      screen.queryByRole('heading', { name: 'パターンリピート' }),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('separator', { name: 'パターンリピート領域の高さ' }),
+    ).toHaveAttribute('aria-valuetext', '非表示')
+
+    await user.click(
+      screen.getByRole('button', { name: 'パターンリピートを表示' }),
+    )
+    expect(
+      screen.getByRole('heading', { name: 'パターンリピート' }),
+    ).toBeVisible()
+  })
   it('selects an accessible palette color and tool', async () => {
     render(<App />)
     const user = userEvent.setup()

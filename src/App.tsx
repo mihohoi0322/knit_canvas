@@ -22,6 +22,9 @@ type PendingResize = { columns: number; rows: number }
 const MIN_EDITOR_ZOOM = 50
 const MAX_EDITOR_ZOOM = 300
 const EDITOR_ZOOM_STEP = 25
+const MIN_REPEAT_HEIGHT = 20
+const MAX_REPEAT_HEIGHT = 60
+const REPEAT_COLLAPSE_THRESHOLD = 12
 
 export default function App() {
   const {
@@ -52,7 +55,12 @@ export default function App() {
   const [pendingResize, setPendingResize] = useState<PendingResize>()
   const [sizeInputRevision, setSizeInputRevision] = useState(0)
   const fileRef = useRef<HTMLInputElement>(null)
+  const canvasColumnRef = useRef<HTMLElement>(null)
   const firstSave = useRef(true)
+  const lastRepeatHeight = useRef(repeatHeight)
+  const repeatDrag = useRef<
+    { pointerId: number; startY: number; moved: boolean } | undefined
+  >(undefined)
   const panDrag = useRef<
     | {
         pointerId: number
@@ -155,6 +163,50 @@ export default function App() {
     )
     setEditorZoom(clampedZoom)
     if (clampedZoom <= 100) setPanMode(false)
+  }
+  const changeRepeatHeight = (nextHeight: number) => {
+    if (nextHeight <= REPEAT_COLLAPSE_THRESHOLD) {
+      setRepeatHeight(0)
+      return
+    }
+    const clampedHeight = Math.max(
+      MIN_REPEAT_HEIGHT,
+      Math.min(MAX_REPEAT_HEIGHT, nextHeight),
+    )
+    lastRepeatHeight.current = clampedHeight
+    setRepeatHeight(clampedHeight)
+  }
+  const toggleRepeatPane = () => {
+    setRepeatHeight((currentHeight) => {
+      if (currentHeight > 0) {
+        lastRepeatHeight.current = currentHeight
+        return 0
+      }
+      return lastRepeatHeight.current
+    })
+  }
+  const startRepeatResize = (event: React.PointerEvent<HTMLDivElement>) => {
+    event.preventDefault()
+    event.currentTarget.setPointerCapture(event.pointerId)
+    repeatDrag.current = {
+      pointerId: event.pointerId,
+      startY: event.clientY,
+      moved: false,
+    }
+  }
+  const moveRepeatResize = (event: React.PointerEvent<HTMLDivElement>) => {
+    const drag = repeatDrag.current
+    const column = canvasColumnRef.current
+    if (!drag || drag.pointerId !== event.pointerId || !column) return
+    if (Math.abs(event.clientY - drag.startY) >= 3) drag.moved = true
+    const bounds = column.getBoundingClientRect()
+    changeRepeatHeight(((event.clientY - bounds.top) / bounds.height) * 100)
+  }
+  const finishRepeatResize = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (repeatDrag.current?.pointerId !== event.pointerId) return
+    repeatDrag.current = undefined
+    if (event.currentTarget.hasPointerCapture(event.pointerId))
+      event.currentTarget.releasePointerCapture(event.pointerId)
   }
   const startPan = (event: React.PointerEvent<HTMLDivElement>) => {
     if (!panMode) return
@@ -369,12 +421,13 @@ export default function App() {
           </aside>
 
           <section
-            className="canvas-column"
+            ref={canvasColumnRef}
+            className={`canvas-column ${repeatHeight === 0 ? 'repeat-collapsed' : ''}`}
             style={
               { '--repeat-height': `${repeatHeight}%` } as React.CSSProperties
             }
           >
-            <div className="repeat-pane">
+            <div className="repeat-pane" hidden={repeatHeight === 0}>
               <div className="pane-heading">
                 <div>
                   <span className="eyebrow">PATTERN PREVIEW</span>
@@ -400,15 +453,59 @@ export default function App() {
                 ))}
               </div>
             </div>
-            <input
+            <div
               className="splitter"
-              aria-label="プレビュー領域の高さ"
-              type="range"
-              min="20"
-              max="60"
-              value={repeatHeight}
-              onChange={(event) => setRepeatHeight(Number(event.target.value))}
-            />
+              role="separator"
+              aria-label="パターンリピート領域の高さ"
+              aria-orientation="horizontal"
+              aria-valuemin={0}
+              aria-valuemax={MAX_REPEAT_HEIGHT}
+              aria-valuenow={repeatHeight}
+              aria-valuetext={
+                repeatHeight === 0 ? '非表示' : `高さ${repeatHeight}%`
+              }
+              tabIndex={0}
+              onPointerDown={startRepeatResize}
+              onPointerMove={moveRepeatResize}
+              onPointerUp={finishRepeatResize}
+              onPointerCancel={finishRepeatResize}
+              onKeyDown={(event) => {
+                if (event.key === 'ArrowUp') {
+                  event.preventDefault()
+                  changeRepeatHeight(
+                    repeatHeight === MIN_REPEAT_HEIGHT ? 0 : repeatHeight - 5,
+                  )
+                } else if (event.key === 'ArrowDown') {
+                  event.preventDefault()
+                  changeRepeatHeight(
+                    repeatHeight === 0
+                      ? lastRepeatHeight.current
+                      : repeatHeight + 5,
+                  )
+                } else if (event.key === 'Home') {
+                  event.preventDefault()
+                  setRepeatHeight(0)
+                } else if (event.key === 'End') {
+                  event.preventDefault()
+                  changeRepeatHeight(MAX_REPEAT_HEIGHT)
+                }
+              }}
+            >
+              <button
+                type="button"
+                className="repeat-toggle"
+                aria-label={
+                  repeatHeight === 0
+                    ? 'パターンリピートを表示'
+                    : 'パターンリピートを非表示'
+                }
+                aria-expanded={repeatHeight > 0}
+                onPointerDown={(event) => event.stopPropagation()}
+                onClick={toggleRepeatPane}
+              >
+                <span aria-hidden="true">{repeatHeight === 0 ? '⌄' : '⌃'}</span>
+              </button>
+            </div>
             <div className="editor-pane">
               <div className="editor-toolbar">
                 <div className="editor-label">
