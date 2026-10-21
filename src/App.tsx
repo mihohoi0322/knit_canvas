@@ -2,6 +2,8 @@ import { colorLabel } from './domain/percentPalette'
 import { useEffect, useRef, useState } from 'react'
 import { YarnPalette } from './components/YarnPalette'
 import { PatternCanvas } from './components/PatternCanvas'
+import { GridEditControls } from './components/GridEditControls'
+import type { CanvasMetrics } from './canvas/render'
 import {
   createProject,
   dimensions,
@@ -11,7 +13,7 @@ import {
   toProjectFile,
   usedColorIds,
 } from './domain/project'
-import type { RepeatCount } from './domain/types'
+import type { GridPoint, RepeatCount } from './domain/types'
 import { projectRepository } from './persistence/repository'
 import { exportProjectPdf } from './pdf/exportPdf'
 import { useEditorStore } from './store/editorStore'
@@ -40,6 +42,9 @@ export default function App() {
     setSelectedColor,
     updateProject,
     resize,
+    insertRow,
+    removeRow,
+    insertColumn,
     clear,
     undo,
     redo,
@@ -54,6 +59,8 @@ export default function App() {
   const [panMode, setPanMode] = useState(false)
   const [pendingResize, setPendingResize] = useState<PendingResize>()
   const [sizeInputRevision, setSizeInputRevision] = useState(0)
+  const [hoveredCell, setHoveredCell] = useState<GridPoint>()
+  const [editorMetrics, setEditorMetrics] = useState<CanvasMetrics>()
   const fileRef = useRef<HTMLInputElement>(null)
   const canvasColumnRef = useRef<HTMLElement>(null)
   const editorZoomRef = useRef(editorZoom)
@@ -623,6 +630,9 @@ export default function App() {
                       '--editor-zoom': `${editorZoom}%`,
                     } as React.CSSProperties
                   }
+                  onPointerLeave={(event) => {
+                    if (event.pointerType !== 'touch') setHoveredCell(undefined)
+                  }}
                 >
                   <PatternCanvas
                     project={project}
@@ -632,7 +642,19 @@ export default function App() {
                     onStrokeStart={beginStroke}
                     onStroke={paint}
                     onStrokeEnd={endStroke}
+                    onHoverCell={setHoveredCell}
+                    onMetricsChange={setEditorMetrics}
                   />
+                  {!panMode && (
+                    <GridEditControls
+                      project={project}
+                      metrics={editorMetrics}
+                      hovered={hoveredCell}
+                      onInsertRow={insertRow}
+                      onRemoveRow={removeRow}
+                      onInsertColumn={insertColumn}
+                    />
+                  )}
                 </div>
               </div>
             </div>

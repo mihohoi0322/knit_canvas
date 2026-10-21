@@ -7,8 +7,11 @@ import {
   cellIndex,
   createProject,
   dimensions,
+  insertColumn,
+  insertRow,
   interpolateLine,
   parseProjectFile,
+  removeRow,
   resizeCells,
   resizeLosesPaint,
   toProjectFile,
@@ -16,6 +19,54 @@ import {
 } from './project'
 
 describe('project domain', () => {
+  it('inserts an empty row above the given row', () => {
+    const cells = ['a', 'b', 'c', 'd', 'e', 'f']
+    expect(insertRow(cells, 2, 0)).toEqual([
+      'a',
+      'b',
+      null,
+      null,
+      'c',
+      'd',
+      'e',
+      'f',
+    ])
+    expect(insertRow(cells, 2, 2)).toEqual([
+      'a',
+      'b',
+      'c',
+      'd',
+      'e',
+      'f',
+      null,
+      null,
+    ])
+  })
+  it('removes the given row', () => {
+    const cells = ['a', 'b', 'c', 'd', 'e', 'f']
+    expect(removeRow(cells, 2, 0)).toEqual(['c', 'd', 'e', 'f'])
+    expect(removeRow(cells, 2, 1)).toEqual(['a', 'b', 'e', 'f'])
+    expect(removeRow(cells, 2, 2)).toEqual(['a', 'b', 'c', 'd'])
+  })
+  it('inserts an empty column to the right of the given column', () => {
+    const cells = ['a', 'b', 'c', 'd']
+    expect(insertColumn(cells, 2, 2, 0)).toEqual([
+      'a',
+      null,
+      'b',
+      'c',
+      null,
+      'd',
+    ])
+    expect(insertColumn(cells, 2, 2, 1)).toEqual([
+      'a',
+      'b',
+      null,
+      'c',
+      'd',
+      null,
+    ])
+  })
   it('calculates physical dimensions and cell aspect ratio', () => {
     expect(
       dimensions({

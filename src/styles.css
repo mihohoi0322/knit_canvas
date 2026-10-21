@@ -220,6 +220,13 @@ button:disabled {
 .canvas-column.repeat-collapsed {
   grid-template-rows: 0 18px 1fr;
 }
+/* リピート欄を非表示にしても、区切り線と編み図が詰めて配置されないよう行を固定する */
+.canvas-column > .splitter {
+  grid-row: 2;
+}
+.canvas-column > .editor-pane {
+  grid-row: 3;
+}
 .repeat-pane,
 .editor-pane {
   min-height: 0;
@@ -742,4 +749,37 @@ button:disabled {
   height: 12px;
   border-radius: 50%;
   border: 1px solid #0003;
+}
+
+.editor-canvas-wrap {
+  position: relative;
+}
+.grid-edit-controls {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.row-edit-controls,
+.column-edit-controls {
+  position: absolute;
+  display: flex;
+  gap: 3px;
+  pointer-events: auto;
+}
+.row-edit-controls {
+  transform: translateY(-50%);
+}
+.column-edit-controls {
+  transform: translate(-50%, -100%);
+}
+.row-edit-controls button,
+.column-edit-controls button {
+  width: 22px;
+  height: 22px;
+  min-height: 0;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 13px;
+  line-height: 1;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 18%);
 }

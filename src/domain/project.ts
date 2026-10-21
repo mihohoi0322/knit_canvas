@@ -106,6 +106,33 @@ export function resizeCells(
   return next
 }
 
+export function insertRow(cells: CellColor[], columns: number, at: number) {
+  const index = (at + 1) * columns
+  return [
+    ...cells.slice(0, index),
+    ...Array<CellColor>(columns).fill(null),
+    ...cells.slice(index),
+  ]
+}
+
+export function removeRow(cells: CellColor[], columns: number, at: number) {
+  return [...cells.slice(0, at * columns), ...cells.slice((at + 1) * columns)]
+}
+
+export function insertColumn(
+  cells: CellColor[],
+  columns: number,
+  rows: number,
+  at: number,
+) {
+  const next: CellColor[] = []
+  for (let y = 0; y < rows; y += 1) {
+    const row = cells.slice(y * columns, (y + 1) * columns)
+    next.push(...row.slice(0, at + 1), null, ...row.slice(at + 1))
+  }
+  return next
+}
+
 export function resizeLosesPaint(
   cells: CellColor[],
   oldColumns: number,
