@@ -1,4 +1,4 @@
-import { act, render, screen, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
@@ -134,6 +134,51 @@ describe('App', () => {
     expect(document.querySelector('.repeat-canvas')).not.toHaveStyle({
       '--editor-zoom': '150%',
     })
+  })
+
+  it('shows row and column edit buttons for the hovered cell', () => {
+    const rect = vi
+      .spyOn(HTMLCanvasElement.prototype, 'getBoundingClientRect')
+      .mockReturnValue(new DOMRect(0, 0, 400, 400))
+    const confirm = vi.spyOn(window, 'confirm')
+    HTMLCanvasElement.prototype.hasPointerCapture = () => false
+    try {
+      render(<App />)
+      const canvas = screen.getByLabelText('20目×20段の編集用編み図')
+      const event = new Event('pointermove', { bubbles: true })
+      // 400px四方では1目12.17px、1段16.6px、方眼の左上は(78.3, 34)
+      Object.defineProperties(event, {
+        pointerId: { value: 1 },
+        pointerType: { value: 'mouse' },
+        clientX: { value: 78.3 + 12.17 * 3.5 },
+        clientY: { value: 34 + 16.6 * 15.5 },
+      })
+      act(() => {
+        canvas.dispatchEvent(event)
+      })
+
+      fireEvent.click(
+        screen.getByRole('button', { name: '5段目の上に段を挿入' }),
+      )
+      expect(useEditorStore.getState().project.rows).toBe(21)
+      fireEvent.click(
+        screen.getByRole('button', { name: '4目めの右に目を挿入' }),
+      )
+      expect(useEditorStore.getState().project.columns).toBe(21)
+
+      confirm.mockReturnValueOnce(false)
+      fireEvent.click(screen.getByRole('button', { name: '5段目を削除' }))
+      expect(confirm).toHaveBeenCalledWith(
+        '5段目を削除してもいいですか？元に戻すこともできます。',
+      )
+      expect(useEditorStore.getState().project.rows).toBe(21)
+      confirm.mockReturnValueOnce(true)
+      fireEvent.click(screen.getByRole('button', { name: '5段目を削除' }))
+      expect(useEditorStore.getState().project.rows).toBe(20)
+    } finally {
+      rect.mockRestore()
+      confirm.mockRestore()
+    }
   })
 
   it('keeps the size inputs synchronized with the restored project', () => {

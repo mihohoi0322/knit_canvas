@@ -244,3 +244,66 @@ test('fits the application and canvases to common PC viewport sizes', async ({
     }
   }
 })
+
+test('inserts and removes rows from the hovered row buttons', async ({
+  page,
+}) => {
+  await page.goto('/')
+  const canvas = page.getByLabel('20目×20段の編集用編み図')
+  const box = await canvas.boundingBox()
+  if (!box) throw new Error('canvas not visible')
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+
+  // 方眼の外の余白を通ってボタンまでカーソルを動かしても消えない
+  const insertRowButton = page.getByRole('button', {
+    name: /段目の上に段を挿入$/,
+  })
+  const buttonBox = await insertRowButton.boundingBox()
+  if (!buttonBox) throw new Error('row button not visible')
+  await page.mouse.move(
+    buttonBox.x + buttonBox.width / 2,
+    buttonBox.y + buttonBox.height / 2,
+    { steps: 20 },
+  )
+  await insertRowButton.click()
+  await expect(page.getByLabel('20目×21段の編集用編み図')).toBeVisible()
+
+  await page.getByRole('button', { name: /目めの右に目を挿入$/ }).click()
+  await expect(page.getByLabel('21目×21段の編集用編み図')).toBeVisible()
+
+  page.once('dialog', (dialog) => void dialog.accept())
+  await page.getByRole('button', { name: /段目を削除$/ }).click()
+  await expect(page.getByLabel('21目×20段の編集用編み図')).toBeVisible()
+
+  await page.getByRole('button', { name: '元に戻す' }).click()
+  await expect(page.getByLabel('21目×21段の編集用編み図')).toBeVisible()
+
+  await page.mouse.move(0, 0)
+  await expect(
+    page.getByRole('button', { name: /段目を削除$/ }),
+  ).not.toBeVisible()
+})
+
+test('hides only the pattern repeat pane and enlarges the chart', async ({
+  page,
+}) => {
+  await page.goto('/')
+  const editorPane = page.locator('.editor-pane')
+  const before = await editorPane.boundingBox()
+  if (!before) throw new Error('editor pane not visible')
+
+  await page.getByRole('button', { name: 'パターンリピートを非表示' }).click()
+
+  await expect(
+    page.getByRole('heading', { name: 'パターンリピート' }),
+  ).toBeHidden()
+  await expect(page.getByLabel('20目×20段の編集用編み図')).toBeVisible()
+  const after = await editorPane.boundingBox()
+  if (!after) throw new Error('editor pane not visible')
+  expect(after.height).toBeGreaterThan(before.height)
+
+  await page.getByRole('button', { name: 'パターンリピートを表示' }).click()
+  await expect(
+    page.getByRole('heading', { name: 'パターンリピート' }),
+  ).toBeVisible()
+})

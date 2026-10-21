@@ -1,5 +1,13 @@
 import { create } from 'zustand'
-import { createProject, paintCells, resizeCells } from '../domain/project'
+import {
+  MAX_GRID_SIZE,
+  createProject,
+  insertColumn,
+  insertRow,
+  paintCells,
+  removeRow,
+  resizeCells,
+} from '../domain/project'
 import { normalizeCurrentPercentPalette } from '../domain/percentPalette'
 import type {
   CellColor,
@@ -24,6 +32,9 @@ type EditorState = {
   setSelectedColor(id: string): void
   updateProject(patch: Partial<PatternProject>): void
   resize(columns: number, rows: number): void
+  insertRow(at: number): void
+  removeRow(at: number): void
+  insertColumn(at: number): void
   clear(): void
   undo(): void
   redo(): void
@@ -129,6 +140,51 @@ export const useEditorStore = create<EditorState>((set, get) => ({
         updatedAt: new Date().toISOString(),
       },
     })),
+  insertRow: (at) =>
+    set((state) => {
+      const { columns, rows, cells } = state.project
+      if (rows >= MAX_GRID_SIZE || at < 0 || at >= rows) return {}
+      return {
+        past: [...state.past, snapshot(state.project)].slice(-100),
+        future: [],
+        project: {
+          ...state.project,
+          rows: rows + 1,
+          cells: insertRow(cells, columns, at),
+          updatedAt: new Date().toISOString(),
+        },
+      }
+    }),
+  removeRow: (at) =>
+    set((state) => {
+      const { columns, rows, cells } = state.project
+      if (rows <= 1 || at < 0 || at >= rows) return {}
+      return {
+        past: [...state.past, snapshot(state.project)].slice(-100),
+        future: [],
+        project: {
+          ...state.project,
+          rows: rows - 1,
+          cells: removeRow(cells, columns, at),
+          updatedAt: new Date().toISOString(),
+        },
+      }
+    }),
+  insertColumn: (at) =>
+    set((state) => {
+      const { columns, rows, cells } = state.project
+      if (columns >= MAX_GRID_SIZE || at < 0 || at >= columns) return {}
+      return {
+        past: [...state.past, snapshot(state.project)].slice(-100),
+        future: [],
+        project: {
+          ...state.project,
+          columns: columns + 1,
+          cells: insertColumn(cells, columns, rows, at),
+          updatedAt: new Date().toISOString(),
+        },
+      }
+    }),
   clear: () =>
     set((state) => ({
       past: [...state.past, snapshot(state.project)].slice(-100),

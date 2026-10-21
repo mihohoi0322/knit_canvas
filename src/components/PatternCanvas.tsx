@@ -14,6 +14,8 @@ type Props = {
   onStrokeStart?(): void
   onStroke?(points: GridPoint[]): void
   onStrokeEnd?(): void
+  onHoverCell?(point: GridPoint): void
+  onMetricsChange?(metrics: CanvasMetrics): void
   className?: string
   labels?: boolean
 }
@@ -25,6 +27,8 @@ export function PatternCanvas({
   onStrokeStart,
   onStroke,
   onStrokeEnd,
+  onHoverCell,
+  onMetricsChange,
   className,
   labels = false,
 }: Props) {
@@ -32,6 +36,8 @@ export function PatternCanvas({
   const metricsRef = useRef<CanvasMetrics | undefined>(undefined)
   const lastPoint = useRef<GridPoint | undefined>(undefined)
   const drawing = useRef(false)
+  const onMetricsChangeRef = useRef(onMetricsChange)
+  onMetricsChangeRef.current = onMetricsChange
   const touchPointers = useRef(new Set<number>())
   const pendingTouch = useRef<
     | {
@@ -61,6 +67,15 @@ export function PatternCanvas({
         repeats,
         labels,
       )
+      const metrics = metricsRef.current
+      onMetricsChangeRef.current?.({
+        width: metrics.width / ratio,
+        height: metrics.height / ratio,
+        cellWidth: metrics.cellWidth / ratio,
+        cellHeight: metrics.cellHeight / ratio,
+        offsetX: metrics.offsetX / ratio,
+        offsetY: metrics.offsetY / ratio,
+      })
     }
     resize()
     const observer = new ResizeObserver(resize)
@@ -108,7 +123,13 @@ export function PatternCanvas({
     onStrokeStart?.()
     onStroke?.([point])
   }
+  const notifyHover = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    // 方眼の外ではホバー中のマスを保ち、外側のボタンへカーソルを移せるようにする
+    const point = pointForEvent(event)
+    if (point) onHoverCell?.(point)
+  }
   const pointerMove = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    if (event.pointerType !== 'touch' && !drawing.current) notifyHover(event)
     if (event.pointerType === 'touch') {
       const pending = pendingTouch.current
       if (
@@ -145,6 +166,7 @@ export function PatternCanvas({
   }
   const pointerUp = (event: React.PointerEvent<HTMLCanvasElement>) => {
     if (!interactive) return
+    if (event.type === 'pointerup') notifyHover(event)
     if (event.pointerType === 'touch') {
       touchPointers.current.delete(event.pointerId)
       const pending = pendingTouch.current

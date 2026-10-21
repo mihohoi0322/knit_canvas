@@ -27,6 +27,40 @@ describe('editor store', () => {
       'percent-1',
     ])
   })
+  it('inserts and removes rows and columns with undo', () => {
+    const store = useEditorStore.getState()
+    store.beginStroke()
+    store.paint([{ x: 3, y: 5 }])
+    store.endStroke()
+    useEditorStore.getState().insertRow(4)
+    let project = useEditorStore.getState().project
+    expect(project.rows).toBe(21)
+    expect(project.cells[6 * 20 + 3]).toBe('percent-1')
+    useEditorStore.getState().insertColumn(1)
+    project = useEditorStore.getState().project
+    expect(project.columns).toBe(21)
+    expect(project.cells[6 * 21 + 4]).toBe('percent-1')
+    useEditorStore.getState().removeRow(6)
+    project = useEditorStore.getState().project
+    expect(project.rows).toBe(20)
+    expect(project.cells.every((cell) => cell === null)).toBe(true)
+    useEditorStore.getState().undo()
+    useEditorStore.getState().undo()
+    useEditorStore.getState().undo()
+    project = useEditorStore.getState().project
+    expect([project.columns, project.rows]).toEqual([20, 20])
+    expect(project.cells[5 * 20 + 3]).toBe('percent-1')
+  })
+  it('ignores row and column edits beyond the grid limits', () => {
+    useEditorStore.getState().resize(200, 1)
+    const before = useEditorStore.getState()
+    before.removeRow(0)
+    before.insertColumn(0)
+    before.insertRow(5)
+    const after = useEditorStore.getState()
+    expect([after.project.columns, after.project.rows]).toEqual([200, 1])
+    expect(after.past).toHaveLength(before.past.length)
+  })
   it('stores resize and clear in history', () => {
     useEditorStore.getState().resize(20, 10)
     expect(useEditorStore.getState().project.cells).toHaveLength(200)
